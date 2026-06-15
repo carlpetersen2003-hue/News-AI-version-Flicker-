@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Flipboard Magazine</title>
 <style>
   :root {
@@ -18,362 +18,229 @@
     --gap: 18px;
     --row: 8px;
   }
-
   * { box-sizing: border-box; }
-
   html, body {
-    margin: 0;
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif;
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-  }
-
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
     overflow: hidden;
   }
+  #app { display: flex; flex-direction: column; height: 100%; }
 
   /* ---------- HEADER ---------- */
   header.top {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 22px;
-    background: linear-gradient(180deg, #131316 0%, rgba(19,19,22,0) 100%);
-    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto; display: flex; align-items: center; gap: 16px;
+    padding: 12px 22px; background: #131316; border-bottom: 1px solid var(--line);
+    z-index: 20;
   }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    font-family: Georgia, "Times New Roman", serif;
-  }
+  .brand { display: flex; align-items: baseline; gap: 10px; font-family: Georgia, "Times New Roman", serif; }
   .brand .mark {
-    width: 26px; height: 26px; border-radius: 6px;
-    background: var(--accent);
+    width: 26px; height: 26px; border-radius: 6px; background: var(--accent);
     display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 800; font-size: 18px;
-    transform: translateY(4px);
+    color: #fff; font-weight: 800; font-size: 18px; transform: translateY(4px);
     box-shadow: 0 4px 14px rgba(225,40,40,.4);
   }
-  .brand h1 {
-    margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
-  }
+  .brand h1 { margin: 0; font-size: 23px; font-weight: 700; letter-spacing: -0.5px; }
   .brand .sub { color: var(--muted); font-size: 13px; font-family: inherit; }
-
   .tabs { display: flex; gap: 6px; margin-left: 8px; }
   .tab {
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--muted);
-    padding: 8px 16px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 13.5px;
-    font-weight: 600;
-    transition: all .15s ease;
-    white-space: nowrap;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 13.5px;
+    font-weight: 600; transition: all .15s ease; white-space: nowrap;
   }
   .tab:hover { color: var(--text); border-color: #3a3a44; }
-  .tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-  .tab .count {
-    display: inline-block; margin-left: 6px; opacity: .8; font-weight: 700;
-  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab .count { display: inline-block; margin-left: 6px; opacity: .85; font-weight: 700; }
   .spacer { flex: 1 1 auto; }
-  .hint { color: var(--muted); font-size: 12.5px; }
+  .hint { color: var(--muted); font-size: 12.5px; text-align: right; }
   .hint b { color: var(--text); }
-
-  /* ---------- GRID ---------- */
-  .scroll {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 22px;
-    scroll-behavior: smooth;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    grid-auto-rows: var(--row);
-    gap: var(--gap);
+  .hint kbd {
+    background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 1px 6px; font-size: 11px; color: var(--text); font-family: inherit;
   }
 
-  /* ---------- CARD ---------- */
-  .card {
-    perspective: 1400px;
-    cursor: pointer;
-  }
-  .card.featured { grid-column: span 2; }
-  @media (max-width: 720px) { .card.featured { grid-column: span 1; } }
+  .stage { position: relative; flex: 1 1 auto; min-height: 0; }
 
-  .flip {
-    position: relative;
-    width: 100%;
-    transform-style: preserve-3d;
-    transition: transform .55s cubic-bezier(.2,.7,.2,1);
+  /* ---------- PAGER (Découvrir) ---------- */
+  .pager {
+    position: absolute; inset: 0;
+    overflow-y: scroll; overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+  }
+  .pager::-webkit-scrollbar { display: none; }
+
+  .page {
+    position: relative; width: 100%; height: 100%;
+    scroll-snap-align: start; scroll-snap-stop: always;
+    overflow: hidden; touch-action: pan-y;
+  }
+  .page-card {
+    position: absolute; inset: 0;
     will-change: transform;
   }
-  .card.flipped .flip { transform: rotateY(180deg); }
-
-  .face {
-    border-radius: 14px;
-    overflow: hidden;
-    background: var(--panel);
-    border: 1px solid var(--line);
-  }
-  .front {
-    position: relative;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-  }
-  .card:hover .front {
-    transform: translateY(-3px);
-    border-color: #3a3a44;
-    box-shadow: 0 16px 40px rgba(0,0,0,.5);
-  }
-  .back {
-    position: absolute;
-    inset: 0;
-    transform: rotateY(180deg);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    background:
-      radial-gradient(120% 120% at 0% 0%, #2a1414 0%, #17171b 55%);
-    border-color: #4a2222;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 22px;
-    gap: 10px;
-  }
-
-  .thumb {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: linear-gradient(135deg, #232329, #15151a);
-    overflow: hidden;
-  }
-  .card.featured .thumb { aspect-ratio: 16 / 8; }
-  .thumb img {
+  .page-media { position: absolute; inset: 0; background: #15151a; }
+  .page-media img {
     width: 100%; height: 100%; object-fit: cover; display: block;
-    opacity: 0; transition: opacity .5s ease;
+    opacity: 0; transition: opacity .6s ease;
   }
-  .thumb img.loaded { opacity: 1; }
-  .thumb.noimg {
-    aspect-ratio: auto;
-    height: 8px;
-    background: var(--accent);
-  }
-  .src-chip {
-    position: absolute; top: 12px; left: 12px;
-    background: rgba(0,0,0,.62);
-    backdrop-filter: blur(6px);
-    color: #fff; font-size: 11.5px; font-weight: 700;
-    padding: 5px 10px; border-radius: 999px;
-    display: flex; align-items: center; gap: 6px;
-    letter-spacing: .2px;
-  }
+  .page-media img.loaded { opacity: 1; }
+  .page.noimg .page-media { background: var(--grad, linear-gradient(160deg,#2a2a33,#121216)); }
 
-  .flip-btn {
-    position: absolute; top: 10px; right: 10px;
-    z-index: 3;
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.18);
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(6px);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+  .page-shade {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(8,8,10,.55) 0%, rgba(8,8,10,0) 26%, rgba(8,8,10,0) 42%, rgba(8,8,10,.82) 100%);
+  }
+  .page.noimg .page-shade { background: linear-gradient(180deg, rgba(8,8,10,.2), rgba(8,8,10,.55)); }
+
+  .page-inner {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 0 7vw 96px;
+    max-width: 1000px; margin: 0 auto;
+  }
+  .page.noimg .page-inner { bottom: auto; top: 50%; transform: translateY(-50%); }
+
+  .src-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.14);
+    color: #fff; font-size: 12.5px; font-weight: 700; letter-spacing: .3px;
+    padding: 6px 13px; border-radius: 999px; margin-bottom: 18px;
+  }
+  .page-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(28px, 4.6vw, 56px); line-height: 1.08; letter-spacing: -0.6px;
+    margin: 0 0 16px; max-width: 18ch;
+    text-shadow: 0 2px 30px rgba(0,0,0,.5);
+  }
+  .page-excerpt {
+    font-size: clamp(15px, 1.5vw, 19px); line-height: 1.55; color: #e4e4e7;
+    max-width: 60ch; margin: 0 0 22px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    text-shadow: 0 1px 20px rgba(0,0,0,.5);
+  }
+  .page-meta { color: #c7c7cc; font-size: 13.5px; margin-bottom: 22px; display:flex; gap:8px; align-items:center; }
+  .page-meta .dot { width:3px; height:3px; border-radius:50%; background:#9a9aa2; }
+  .page-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .pbtn {
+    border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08);
+    backdrop-filter: blur(6px); color: #fff; padding: 12px 22px; border-radius: 12px;
+    cursor: pointer; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; gap: 9px;
     transition: all .15s ease;
   }
-  .flip-btn:hover { background: var(--accent); border-color: var(--accent); transform: scale(1.08); }
-  .flip-btn.on { background: var(--gold); border-color: var(--gold); color: #1a1a1a; }
+  .pbtn:hover { background: rgba(255,255,255,.16); }
+  .pbtn.read { background: var(--accent); border-color: var(--accent); }
+  .pbtn.read:hover { background: #c81f1f; }
+  .pbtn.save.on { background: var(--gold); border-color: var(--gold); color: #1a1a1a; }
 
-  .body { padding: 16px 16px 18px; }
-  .card.featured .body { padding: 20px 22px 22px; }
-  .body .src-text {
-    color: var(--accent);
-    font-size: 11.5px; font-weight: 800; letter-spacing: .6px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 6px;
+  .next-pill {
+    position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.14); color: #e4e4e7;
+    padding: 9px 16px; border-radius: 999px; font-size: 13px; max-width: 80vw;
+    cursor: pointer;
   }
-  .body h3 {
-    margin: 0 0 8px;
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    line-height: 1.22;
-    font-size: 18px;
-    letter-spacing: -0.2px;
-  }
-  .card.featured .body h3 { font-size: 27px; line-height: 1.16; }
-  .body p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .card.featured .body p { -webkit-line-clamp: 4; font-size: 15.5px; }
-  .meta {
-    margin-top: 14px;
-    display: flex; align-items: center; gap: 8px;
-    color: #71717a; font-size: 12px;
-  }
-  .meta .dot { width: 3px; height: 3px; border-radius: 50%; background: #52525b; }
+  .next-pill .chev { animation: bob 1.6s ease-in-out infinite; font-size: 14px; color: #fff; }
+  .next-pill .nt { color: #fff; font-weight: 700; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .next-pill .lbl { color: var(--muted); }
+  @keyframes bob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-4px);} }
 
-  .back .star { font-size: 30px; color: var(--gold); }
-  .back .back-title {
-    font-family: Georgia, serif; font-size: 16px; line-height: 1.3;
-    max-height: 5.2em; overflow: hidden;
+  /* swipe-to-save flash */
+  .save-flash {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.6);
+    z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    color: var(--gold); opacity: 0; pointer-events: none;
   }
-  .back .back-label { color: var(--gold); font-weight: 800; font-size: 12px; letter-spacing: .8px; text-transform: uppercase; }
-  .back .back-src { color: var(--muted); font-size: 12.5px; }
-  .back .remove {
-    margin-top: 6px;
-    border: 1px solid #5a2a2a; background: transparent; color: #f0a;
-    color: #ff9b9b;
-    padding: 7px 14px; border-radius: 999px; cursor: pointer; font-size: 12.5px;
-    font-weight: 600;
+  .save-flash .ic { font-size: 64px; filter: drop-shadow(0 6px 24px rgba(0,0,0,.6)); }
+  .save-flash .tx { font-weight: 800; letter-spacing: .5px; text-transform: uppercase; font-size: 13px; }
+  .save-flash.show { animation: pop .7s ease forwards; }
+  @keyframes pop {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(.5); }
+    35% { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+    70% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(1); }
   }
-  .back .remove:hover { background: rgba(225,40,40,.18); }
+  .swipe-track {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    background: linear-gradient(90deg, rgba(240,180,41,.0), rgba(240,180,41,.22));
+    pointer-events: none; z-index: 4;
+  }
+  .swipe-hintic {
+    position: absolute; top: 50%; left: 24px; transform: translateY(-50%) scale(.8);
+    color: var(--gold); font-size: 28px; opacity: 0; z-index: 4; pointer-events: none;
+  }
 
-  /* ---------- SENTINEL / EMPTY ---------- */
-  #sentinel { height: 40px; grid-column: 1 / -1; }
-  .loader {
-    grid-column: 1 / -1;
-    display: flex; justify-content: center; padding: 24px;
-    color: var(--muted); font-size: 13px;
+  /* ---------- SAVED GRID ---------- */
+  .saved-wrap { position: absolute; inset: 0; overflow-y: auto; padding: 22px; display: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); grid-auto-rows: var(--row); gap: var(--gap); }
+  .card { cursor: pointer; }
+  .face {
+    border-radius: 14px; overflow: hidden; background: var(--panel); border: 1px solid var(--line);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
   }
-  .empty {
-    grid-column: 1 / -1;
-    text-align: center; color: var(--muted);
-    padding: 70px 20px;
+  .card:hover .face { transform: translateY(-3px); border-color: #3a3a44; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+  .thumb { position: relative; width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg,#232329,#15151a); overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .5s ease; }
+  .thumb img.loaded { opacity: 1; }
+  .thumb.noimg { aspect-ratio: auto; height: 8px; background: var(--accent); }
+  .scard-chip { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.62); backdrop-filter: blur(6px); color:#fff; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+  .scard-rm {
+    position: absolute; top: 8px; right: 8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.55); backdrop-filter: blur(6px);
+    color:#fff; cursor: pointer; font-size: 15px; display:flex; align-items:center; justify-content:center;
   }
+  .scard-rm:hover { background: var(--accent); border-color: var(--accent); }
+  .scard-body { padding: 14px 15px 16px; }
+  .scard-body .s { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing:.5px; text-transform: uppercase; margin-bottom: 7px; }
+  .scard-body h3 { margin: 0 0 7px; font-family: Georgia, serif; font-weight: 700; line-height: 1.22; font-size: 17px; }
+  .scard-body p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient: vertical; overflow: hidden; }
+  .empty { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 70px 20px; }
   .empty .big { font-size: 44px; margin-bottom: 12px; }
   .empty h2 { color: var(--text); font-family: Georgia, serif; margin: 0 0 6px; }
 
   /* ---------- READER ---------- */
-  .reader-overlay {
-    position: fixed; inset: 0; z-index: 50;
-    background: rgba(8,8,10,.78);
-    backdrop-filter: blur(4px);
-    opacity: 0; pointer-events: none;
-    transition: opacity .25s ease;
-  }
+  .reader-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(8,8,10,.78); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
   .reader-overlay.open { opacity: 1; pointer-events: auto; }
-  .reader {
-    position: absolute; top: 0; right: 0; bottom: 0;
-    width: min(760px, 100%);
-    background: #121216;
-    border-left: 1px solid var(--line);
-    box-shadow: -20px 0 60px rgba(0,0,0,.55);
-    transform: translateX(100%);
-    transition: transform .35s cubic-bezier(.2,.8,.2,1);
-    display: flex; flex-direction: column;
-  }
+  .reader { position: absolute; top: 0; right: 0; bottom: 0; width: min(760px,100%); background: #121216; border-left: 1px solid var(--line); box-shadow: -20px 0 60px rgba(0,0,0,.55); transform: translateX(100%); transition: transform .35s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; }
   .reader-overlay.open .reader { transform: translateX(0); }
-
-  .reader-bar {
-    flex: 0 0 auto;
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 22px;
-    border-bottom: 1px solid var(--line);
-    background: #15151a;
-  }
+  .reader-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #15151a; }
   .reader-bar .r-src { color: var(--accent); font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
-  .icon-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    border: 1px solid var(--line); background: var(--panel);
-    color: var(--text); cursor: pointer; font-size: 18px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .15s ease;
-  }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all .15s ease; }
   .icon-btn:hover { background: var(--panel-2); border-color: #3a3a44; }
   .icon-btn.on { background: var(--gold); border-color: var(--gold); color: #1a1a1a; }
-
   .reader-scroll { flex: 1 1 auto; overflow-y: auto; padding: 0 0 60px; }
   .reader-hero { width: 100%; max-height: 320px; object-fit: cover; display: block; background: #1a1a20; }
   .reader-content { padding: 26px 44px; }
   @media (max-width: 560px) { .reader-content { padding: 22px 20px; } }
-  .reader-content h1 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 32px; line-height: 1.2; margin: 6px 0 14px; letter-spacing: -.4px;
-  }
-  .reader-meta {
-    color: var(--muted); font-size: 13px; margin-bottom: 22px;
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  }
+  .reader-content h1 { font-family: Georgia, "Times New Roman", serif; font-size: 32px; line-height: 1.2; margin: 6px 0 14px; letter-spacing: -.4px; }
+  .reader-meta { color: var(--muted); font-size: 13px; margin-bottom: 22px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .reader-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
-  .btn {
-    border: 1px solid var(--line); background: var(--panel);
-    color: var(--text); padding: 10px 16px; border-radius: 10px;
-    cursor: pointer; font-size: 13.5px; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 8px;
-    text-decoration: none; transition: all .15s ease;
-  }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all .15s ease; }
   .btn:hover { background: var(--panel-2); border-color: #3a3a44; }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.primary:hover { background: #c81f1f; }
   .btn.gold { background: var(--gold); border-color: var(--gold); color: #1a1a1a; }
-
-  .article-body p {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 17.5px; line-height: 1.75; color: #d4d4d8;
-    margin: 0 0 18px;
-  }
+  .article-body p { font-family: Georgia, "Times New Roman", serif; font-size: 17.5px; line-height: 1.75; color: #d4d4d8; margin: 0 0 18px; }
   .article-body .lead { font-size: 19px; color: #e8e8ea; }
-
-  .summary-box {
-    margin-top: 8px;
-    background: var(--accent-soft);
-    border: 1px solid rgba(225,40,40,.3);
-    border-radius: 14px;
-    padding: 20px 22px;
-    white-space: pre-wrap;
-    line-height: 1.6;
-    font-size: 15px;
-  }
-  .summary-box .s-head {
-    font-weight: 800; color: var(--accent); text-transform: uppercase;
-    letter-spacing: .6px; font-size: 12.5px; margin-bottom: 12px;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .spinner {
-    display: inline-block; width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,.25); border-top-color: #fff;
-    border-radius: 50%; animation: spin .7s linear infinite;
-  }
+  .summary-box { margin-top: 8px; background: var(--accent-soft); border: 1px solid rgba(225,40,40,.3); border-radius: 14px; padding: 20px 22px; white-space: pre-wrap; line-height: 1.6; font-size: 15px; }
+  .summary-box .s-head { font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .6px; font-size: 12.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
   .gold .spinner, .btn .spinner { border-top-color: currentColor; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .loading-block { color: var(--muted); display: flex; align-items: center; gap: 10px; padding: 10px 0; font-size: 14px; }
+  .reader-scroll::-webkit-scrollbar, .saved-wrap::-webkit-scrollbar { width: 10px; }
+  .reader-scroll::-webkit-scrollbar-thumb, .saved-wrap::-webkit-scrollbar-thumb { background: #2c2c33; border-radius: 8px; border: 2px solid var(--bg); }
 
-  /* scrollbars */
-  .scroll::-webkit-scrollbar, .reader-scroll::-webkit-scrollbar { width: 10px; }
-  .scroll::-webkit-scrollbar-thumb, .reader-scroll::-webkit-scrollbar-thumb {
-    background: #2c2c33; border-radius: 8px; border: 2px solid var(--bg);
+  /* ---------- TOAST ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
+    background: #1f1f25; border: 1px solid var(--line); color: var(--text);
+    padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); z-index: 80; opacity: 0; pointer-events: none;
+    transition: all .25s ease; max-width: 80vw; text-align: center;
   }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -385,17 +252,16 @@
       <span class="sub">agrégateur d'idées & de géopolitique</span>
     </div>
     <div class="tabs">
-      <button class="tab active" data-view="all" id="tabAll">Découvrir</button>
-      <button class="tab" data-view="saved" id="tabSaved">
-        🔖 Mon Magazine<span class="count" id="savedCount">0</span>
-      </button>
+      <button class="tab active" data-view="discover" id="tabDiscover">Découvrir</button>
+      <button class="tab" data-view="saved" id="tabSaved">🔖 Mon Magazine<span class="count" id="savedCount">0</span></button>
     </div>
     <div class="spacer"></div>
-    <div class="hint">Glissez une carte ou touchez <b>⤺</b> pour la <b>flipper</b> dans votre magazine</div>
+    <div class="hint" id="hint"></div>
   </header>
 
-  <div class="scroll" id="scroll">
-    <div class="grid" id="grid"></div>
+  <div class="stage">
+    <div class="pager" id="pager" tabindex="0"></div>
+    <div class="saved-wrap" id="savedWrap"><div class="grid" id="grid"></div></div>
   </div>
 </div>
 
@@ -406,7 +272,7 @@
       <button class="icon-btn" id="readerClose" title="Fermer">←</button>
       <span class="r-src" id="readerSrc"></span>
       <div class="spacer" style="flex:1"></div>
-      <button class="icon-btn" id="readerFlip" title="Ajouter à Mon Magazine">⤺</button>
+      <button class="icon-btn" id="readerFlip" title="Ajouter à Mon Magazine">🔖</button>
     </div>
     <div class="reader-scroll" id="readerScroll">
       <img class="reader-hero" id="readerHero" alt="" style="display:none" />
@@ -421,310 +287,341 @@
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
 (function () {
   "use strict";
 
   // ---------- Streamlit protocol ----------
   function post(type, extra) {
-    var msg = Object.assign({ isStreamlitMessage: true, type: type }, extra || {});
-    window.parent.postMessage(msg, "*");
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, extra || {}), "*");
   }
-  function setValue(value) {
-    post("streamlit:setComponentValue", { value: value, dataType: "json" });
-  }
+  function setValue(value) { post("streamlit:setComponentValue", { value: value, dataType: "json" }); }
   function setHeight(h) { post("streamlit:setFrameHeight", { height: h }); }
-
   function fitHeight() {
     var h = 760;
-    try {
-      var ph = window.parent.innerHeight || window.innerHeight;
-      h = Math.max(560, ph - 70);
-    } catch (e) {
-      h = Math.max(560, window.innerHeight || 760);
-    }
+    try { h = Math.max(560, (window.parent.innerHeight || window.innerHeight) - 64); }
+    catch (e) { h = Math.max(560, window.innerHeight || 760); }
     setHeight(h);
   }
 
   // ---------- State ----------
   var S = {
-    articles: [],
-    index: {},
-    enrich: { text: {}, summary: {} },
-    notebooklm: "",
-    view: "all",
-    rendered: 0,
-    batch: 12,
-    saved: loadSaved(),
-    initialized: false,
-    openId: null,
-    pending: {}, // id -> {text:bool, summary:bool}
+    articles: [], index: {}, enrich: { text: {}, summary: {} }, notebooklm: "https://notebooklm.com",
+    view: "discover", current: 0, pageEls: [], saved: loadSaved(), initialized: false,
+    openId: null, pending: {},
   };
 
+  var SRC_GRAD = {
+    "La Vie des Idées": "linear-gradient(160deg,#3b2f6b,#15122b)",
+    "Diploweb": "linear-gradient(160deg,#0f4c5c,#08222a)",
+    "Telos": "linear-gradient(160deg,#5c3a0f,#241606)",
+    "Institut Montaigne": "linear-gradient(160deg,#5c0f1f,#22060d)",
+    "Les Yeux du Monde": "linear-gradient(160deg,#0f3b5c,#071c28)",
+  };
+  function gradFor(src) { return SRC_GRAD[src] || "linear-gradient(160deg,#2a2a33,#121216)"; }
+
   var BK = "flip_magazine_bookmarks_v1";
-  function loadSaved() {
-    try { return JSON.parse(localStorage.getItem(BK) || "[]"); }
-    catch (e) { return []; }
-  }
-  function persistSaved() {
-    try { localStorage.setItem(BK, JSON.stringify(S.saved)); } catch (e) {}
-  }
+  function loadSaved() { try { return JSON.parse(localStorage.getItem(BK) || "[]"); } catch (e) { return []; } }
+  function persistSaved() { try { localStorage.setItem(BK, JSON.stringify(S.saved)); } catch (e) {} }
   function isSaved(id) { return S.saved.indexOf(id) !== -1; }
-  function toggleSaved(id) {
+  function setSaved(id, on) {
     var i = S.saved.indexOf(id);
-    if (i === -1) S.saved.push(id); else S.saved.splice(i, 1);
-    persistSaved();
-    updateSavedCount();
-    return isSaved(id);
+    if (on && i === -1) S.saved.push(id);
+    if (!on && i !== -1) S.saved.splice(i, 1);
+    persistSaved(); updateSavedCount();
   }
+  function toggleSaved(id) { var on = !isSaved(id); setSaved(id, on); return on; }
   function updateSavedCount() {
-    var present = S.saved.filter(function (id) { return S.index[id]; });
-    document.getElementById("savedCount").textContent = present.length;
+    var n = S.saved.filter(function (id) { return S.index[id]; }).length;
+    document.getElementById("savedCount").textContent = n;
   }
 
-  function esc(s) {
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function stripTags(html) { var d = document.createElement("div"); d.innerHTML = html || ""; return (d.textContent || d.innerText || "").replace(/\s+/g, " ").trim(); }
+
+  function toast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._t); t._t = setTimeout(function () { t.classList.remove("show"); }, 2400);
   }
 
-  // ---------- DOM refs ----------
+  // ---------- DOM ----------
+  var pager = document.getElementById("pager");
+  var savedWrap = document.getElementById("savedWrap");
   var grid = document.getElementById("grid");
-  var scroll = document.getElementById("scroll");
 
-  // ---------- Lazy images ----------
+  // ---------- Hint per device ----------
+  var IS_TOUCH = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+  function setHint() {
+    document.getElementById("hint").innerHTML = IS_TOUCH
+      ? "Glissez <b>vers le haut</b> pour l'article suivant · <b>vers la droite</b> pour enregistrer"
+      : "<kbd>↓</kbd> article suivant · <kbd>→</kbd> enregistrer · <kbd>Entrée</kbd> lire";
+  }
+
+  // ---------- PAGER ----------
+  function buildPager() {
+    pager.innerHTML = "";
+    S.pageEls = [];
+    if (!S.articles.length) {
+      pager.innerHTML = '<div class="empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><div class="big">📭</div><h2>Aucun article</h2><p>Les flux sont momentanément indisponibles.</p></div>';
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    S.articles.forEach(function (a, i) {
+      frag.appendChild(buildPage(a, i));
+    });
+    pager.appendChild(frag);
+    loadAround(0);
+  }
+
+  function buildPage(a, i) {
+    var next = S.articles[i + 1];
+    var page = document.createElement("section");
+    page.className = "page" + (a.image ? "" : " noimg");
+    page.setAttribute("data-id", a.id);
+    page.setAttribute("data-i", i);
+    if (!a.image) page.style.setProperty("--grad", gradFor(a.source));
+
+    var media = a.image
+      ? '<div class="page-media"><img alt="" data-src="' + esc(a.image) + '"></div>'
+      : '<div class="page-media"></div>';
+
+    var nextPill = next
+      ? '<div class="next-pill" data-go="' + (i + 1) + '"><span class="chev">⌃</span><span class="lbl">Suivant&nbsp;:</span><span class="nt">' + esc(next.title) + '</span></div>'
+      : '<div class="next-pill"><span>✓ Vous êtes à jour</span></div>';
+
+    page.innerHTML =
+      '<div class="page-card">' +
+        media +
+        '<div class="page-shade"></div>' +
+        '<div class="page-inner">' +
+          '<span class="src-chip">' + esc(a.emoji) + " " + esc(a.source) + "</span>" +
+          '<h2 class="page-title">' + esc(a.title) + "</h2>" +
+          (a.excerpt ? '<p class="page-excerpt">' + esc(a.excerpt) + "</p>" : "") +
+          '<div class="page-meta">' +
+            (a.author ? "<span>" + esc(a.author) + "</span><span class='dot'></span>" : "") +
+            "<span>" + esc(a.date || "") + "</span>" +
+          "</div>" +
+          '<div class="page-actions">' +
+            '<button class="pbtn read" data-act="read">📖 Lire l\'article</button>' +
+            '<button class="pbtn save' + (isSaved(a.id) ? " on" : "") + '" data-act="save">' +
+              (isSaved(a.id) ? "★ Enregistré" : "🔖 Enregistrer") + "</button>" +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="swipe-track"></div>' +
+      '<div class="swipe-hintic">★</div>' +
+      nextPill +
+      '<div class="save-flash"><span class="ic">★</span><span class="tx">Enregistré</span></div>';
+
+    wirePage(page, a, i);
+    S.pageEls[i] = page;
+    return page;
+  }
+
+  function updatePageSaveBtn(i) {
+    var page = S.pageEls[i]; if (!page) return;
+    var a = S.articles[i];
+    var btn = page.querySelector('.pbtn.save');
+    if (btn) { var on = isSaved(a.id); btn.classList.toggle("on", on); btn.innerHTML = on ? "★ Enregistré" : "🔖 Enregistrer"; }
+  }
+
+  function flashSave(i) {
+    var page = S.pageEls[i]; if (!page) return;
+    var f = page.querySelector(".save-flash");
+    if (f) { f.classList.remove("show"); void f.offsetWidth; f.classList.add("show"); }
+  }
+
+  function saveArticle(i, viaGesture) {
+    var a = S.articles[i]; if (!a) return;
+    if (!isSaved(a.id)) { setSaved(a.id, true); flashSave(i); toast("★ Ajouté à Mon Magazine"); }
+    else if (viaGesture) { flashSave(i); toast("Déjà dans Mon Magazine"); }
+    updatePageSaveBtn(i);
+    syncReaderSaveState(a.id);
+  }
+
+  function wirePage(page, a, i) {
+    var card = page.querySelector(".page-card");
+    var track = page.querySelector(".swipe-track");
+    var hintic = page.querySelector(".swipe-hintic");
+
+    page.querySelector('[data-act="read"]').addEventListener("click", function (e) { e.stopPropagation(); openReader(a.id); });
+    page.querySelector('[data-act="save"]').addEventListener("click", function (e) {
+      e.stopPropagation();
+      var on = toggleSaved(a.id);
+      if (on) { flashSave(i); toast("★ Ajouté à Mon Magazine"); } else { toast("Retiré de Mon Magazine"); }
+      updatePageSaveBtn(i); syncReaderSaveState(a.id);
+    });
+    var pill = page.querySelector(".next-pill[data-go]");
+    if (pill) pill.addEventListener("click", function () { goToPage(parseInt(pill.getAttribute("data-go"), 10)); });
+
+    // open reader by tapping the title/excerpt (not while dragging)
+    page.querySelector(".page-inner").addEventListener("click", function (e) {
+      if (e.target.closest(".pbtn")) return;
+      if (page._moved) return;
+      if (e.target.closest(".page-title") || e.target.closest(".page-excerpt") || e.target.closest(".src-chip")) {
+        openReader(a.id);
+      }
+    });
+
+    // ---- horizontal swipe-to-save (touch-action: pan-y lets us own horizontal) ----
+    var sx = 0, sy = 0, drag = false, dir = null;
+    page.addEventListener("pointerdown", function (e) {
+      if (e.target.closest(".pbtn") || e.target.closest(".next-pill")) return;
+      sx = e.clientX; sy = e.clientY; drag = true; dir = null; page._moved = false;
+    });
+    page.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (dir === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+        dir = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+        if (dir === "h") { try { page.setPointerCapture(e.pointerId); } catch (er) {} }
+      }
+      if (dir === "h") {
+        e.preventDefault();
+        page._moved = true;
+        var tx = Math.max(0, dx);
+        card.style.transition = "none";
+        card.style.transform = "translateX(" + (tx * 0.85) + "px) rotate(" + (tx * 0.012) + "deg)";
+        var prog = Math.min(1, tx / 150);
+        track.style.width = tx + "px";
+        hintic.style.opacity = prog;
+        hintic.style.transform = "translateY(-50%) scale(" + (0.8 + prog * 0.5) + ")";
+      }
+    });
+    function end(e) {
+      if (!drag) return; drag = false;
+      if (dir === "h") {
+        var dx = (e.clientX || sx) - sx;
+        card.style.transition = "transform .3s cubic-bezier(.2,.8,.2,1)";
+        if (dx > 130) { card.style.transform = "translateX(120%) rotate(8deg)"; saveArticle(i, true); setTimeout(function () { card.style.transform = ""; }, 260); }
+        else { card.style.transform = ""; }
+        track.style.width = "0"; hintic.style.opacity = 0;
+        setTimeout(function () { page._moved = false; }, 60);
+      }
+    }
+    page.addEventListener("pointerup", end);
+    page.addEventListener("pointercancel", end);
+  }
+
+  // lazy load image for page i and neighbours
+  function loadImg(i) {
+    var page = S.pageEls[i]; if (!page) return;
+    var img = page.querySelector("img[data-src]");
+    if (!img) return;
+    var src = img.getAttribute("data-src");
+    img.removeAttribute("data-src");
+    img.onload = function () { img.classList.add("loaded"); };
+    img.onerror = function () { page.classList.add("noimg"); page.style.setProperty("--grad", gradFor(S.articles[i].source)); var m = page.querySelector(".page-media"); if (m) m.innerHTML = ""; };
+    img.src = src;
+  }
+  function loadAround(i) { for (var k = i - 1; k <= i + 2; k++) if (k >= 0 && k < S.pageEls.length) loadImg(k); }
+
+  function goToPage(i) {
+    i = Math.max(0, Math.min(S.pageEls.length - 1, i));
+    pager.scrollTo({ top: i * pager.clientHeight, behavior: "smooth" });
+  }
+
+  pager.addEventListener("scroll", function () {
+    var i = Math.round(pager.scrollTop / pager.clientHeight);
+    if (i !== S.current) { S.current = i; loadAround(i); }
+  });
+
+  // ---------- SAVED GRID ----------
   var imgObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (en) {
       if (!en.isIntersecting) return;
-      var img = en.target;
-      imgObserver.unobserve(img);
-      var src = img.getAttribute("data-src");
-      if (!src) return;
+      var img = en.target; imgObserver.unobserve(img);
+      var src = img.getAttribute("data-src"); if (!src) return;
       img.onload = function () { img.classList.add("loaded"); layout(); };
-      img.onerror = function () {
-        var t = img.closest(".thumb");
-        if (t) { t.classList.add("noimg"); img.remove(); layout(); }
-      };
+      img.onerror = function () { var t = img.closest(".thumb"); if (t) { t.classList.add("noimg"); img.remove(); layout(); } };
       img.src = src;
     });
-  }, { root: scroll, rootMargin: "300px 0px" });
+  }, { root: null, rootMargin: "300px 0px" });
 
-  // ---------- Masonry layout ----------
+  function buildSavedGrid() {
+    grid.innerHTML = "";
+    var list = S.saved.map(function (id) { return S.index[id]; }).filter(Boolean);
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty"><div class="big">🔖</div><h2>Votre magazine est vide</h2><p>Dans « Découvrir », glissez une carte vers la droite (ou flèche →) pour enregistrer vos articles.</p></div>';
+      return;
+    }
+    list.forEach(function (a) { grid.appendChild(buildSavedCard(a)); });
+    layout();
+  }
+
+  function buildSavedCard(a) {
+    var card = document.createElement("article");
+    card.className = "card"; card.setAttribute("data-id", a.id);
+    var thumb = a.image
+      ? '<div class="thumb"><span class="scard-chip">' + esc(a.emoji) + " " + esc(a.source) + '</span><button class="scard-rm" title="Retirer">✕</button><img alt="" data-src="' + esc(a.image) + '"></div>'
+      : '<div class="thumb noimg"></div><button class="scard-rm" title="Retirer" style="position:absolute">✕</button>';
+    card.innerHTML =
+      '<div class="face">' + thumb +
+        '<div class="scard-body">' +
+          (a.image ? "" : '<div class="s">' + esc(a.emoji) + " " + esc(a.source) + "</div>") +
+          "<h3>" + esc(a.title) + "</h3>" +
+          "<p>" + esc(a.excerpt) + "</p>" +
+        "</div>" +
+      "</div>";
+    var img = card.querySelector("img[data-src]"); if (img) imgObserver.observe(img);
+    card.querySelector(".scard-rm").addEventListener("click", function (e) {
+      e.stopPropagation(); setSaved(a.id, false);
+      var idx = S.articles.findIndex(function (x) { return x.id === a.id; });
+      if (idx >= 0) updatePageSaveBtn(idx);
+      buildSavedGrid();
+    });
+    card.addEventListener("click", function () { openReader(a.id); });
+    return card;
+  }
+
   var layoutScheduled = false;
   function layout() {
-    if (layoutScheduled) return;
-    layoutScheduled = true;
+    if (layoutScheduled) return; layoutScheduled = true;
     requestAnimationFrame(function () {
       layoutScheduled = false;
       var styles = getComputedStyle(grid);
       var row = parseFloat(styles.getPropertyValue("grid-auto-rows")) || 8;
       var gap = parseFloat(styles.getPropertyValue("row-gap")) || 18;
-      var cards = grid.querySelectorAll(".card");
-      cards.forEach(function (card) {
-        var inner = card.querySelector(".front");
-        if (!inner) return;
-        var h = inner.getBoundingClientRect().height;
-        var span = Math.ceil((h + gap) / (row + gap));
+      grid.querySelectorAll(".card").forEach(function (card) {
+        var face = card.querySelector(".face"); if (!face) return;
+        var span = Math.ceil((face.getBoundingClientRect().height + gap) / (row + gap));
         card.style.gridRowEnd = "span " + span;
       });
     });
   }
 
-  // ---------- Card building ----------
-  function buildCard(a) {
-    var card = document.createElement("article");
-    card.className = "card" + (a.featured ? " featured" : "");
-    card.setAttribute("data-id", a.id);
-    if (isSaved(a.id)) card.classList.add("flipped");
-
-    var thumb = a.image
-      ? '<div class="thumb">' +
-          '<span class="src-chip">' + esc(a.emoji) + " " + esc(a.source) + "</span>" +
-          '<button class="flip-btn ' + (isSaved(a.id) ? "on" : "") + '" title="Flipper dans Mon Magazine">⤺</button>' +
-          '<img data-src="' + esc(a.image) + '" alt="" />' +
-        "</div>"
-      : '<div class="thumb noimg"></div>' +
-        '<button class="flip-btn ' + (isSaved(a.id) ? "on" : "") + '" style="position:absolute" title="Flipper dans Mon Magazine">⤺</button>';
-
-    var srcText = a.image ? "" :
-      '<div class="src-text">' + esc(a.emoji) + " " + esc(a.source) + "</div>";
-
-    var meta = '<div class="meta">' +
-      (a.author ? "<span>" + esc(a.author) + "</span><span class='dot'></span>" : "") +
-      "<span>" + esc(a.date || "") + "</span>" +
-      "</div>";
-
-    card.innerHTML =
-      '<div class="flip">' +
-        '<div class="face front">' +
-          thumb +
-          '<div class="body">' +
-            srcText +
-            "<h3>" + esc(a.title) + "</h3>" +
-            "<p>" + esc(a.excerpt) + "</p>" +
-            meta +
-          "</div>" +
-        "</div>" +
-        '<div class="face back">' +
-          '<div class="star">★</div>' +
-          '<div class="back-label">Dans Mon Magazine</div>' +
-          '<div class="back-title">' + esc(a.title) + "</div>" +
-          '<div class="back-src">' + esc(a.emoji) + " " + esc(a.source) + "</div>" +
-          '<button class="remove">Retirer</button>' +
-        "</div>" +
-      "</div>";
-
-    wireCard(card, a);
-    return card;
-  }
-
-  function wireCard(card, a) {
-    var flip = card.querySelector(".flip");
-    var flipBtn = card.querySelector(".flip-btn");
-    var removeBtn = card.querySelector(".remove");
-    var front = card.querySelector(".front");
-    var img = card.querySelector("img[data-src]");
-    if (img) imgObserver.observe(img);
-
-    function applyFlip(state) {
-      card.classList.toggle("flipped", state);
-      if (flipBtn) flipBtn.classList.toggle("on", state);
-    }
-
-    flipBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      applyFlip(toggleSaved(a.id));
-      pulse(flipBtn);
-    });
-    if (removeBtn) {
-      removeBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        applyFlip(toggleSaved(a.id));
-        if (S.view === "saved") { setTimeout(rebuild, 250); }
-      });
-    }
-
-    // ---- drag-to-flip gesture ----
-    var startX = 0, startY = 0, dragging = false, decided = false, horizontal = false;
-    front.addEventListener("pointerdown", function (e) {
-      if (e.target.closest(".flip-btn")) return;
-      startX = e.clientX; startY = e.clientY;
-      dragging = true; decided = false; horizontal = false;
-    });
-    front.addEventListener("pointermove", function (e) {
-      if (!dragging) return;
-      var dx = e.clientX - startX, dy = e.clientY - startY;
-      if (!decided && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-        decided = true;
-        horizontal = Math.abs(dx) > Math.abs(dy);
-        if (horizontal) { flip.style.transition = "none"; try { front.setPointerCapture(e.pointerId); } catch (er) {} }
-      }
-      if (horizontal) {
-        e.preventDefault();
-        var base = card.classList.contains("flipped") ? 180 : 0;
-        var deg = Math.max(-200, Math.min(200, base + dx / 2.2));
-        flip.style.transform = "rotateY(" + deg + "deg)";
-      }
-    });
-    function endDrag(e) {
-      if (!dragging) return;
-      dragging = false;
-      flip.style.transition = "";
-      flip.style.transform = "";
-      if (horizontal) {
-        var dx = e.clientX - startX;
-        if (Math.abs(dx) > 70) { applyFlip(toggleSaved(a.id)); pulse(flipBtn); }
-        // prevent the click->reader right after a drag
-        card._noClick = true;
-        setTimeout(function () { card._noClick = false; }, 60);
-      }
-    }
-    front.addEventListener("pointerup", endDrag);
-    front.addEventListener("pointercancel", endDrag);
-
-    front.addEventListener("click", function (e) {
-      if (card._noClick) return;
-      if (e.target.closest(".flip-btn")) return;
-      openReader(a.id);
-    });
-  }
-
-  function pulse(el) {
-    if (!el) return;
-    el.animate(
-      [{ transform: "scale(1)" }, { transform: "scale(1.35)" }, { transform: "scale(1)" }],
-      { duration: 280, easing: "ease-out" }
-    );
-  }
-
-  // ---------- List / rendering ----------
-  function currentList() {
-    if (S.view === "saved") {
-      return S.saved
-        .map(function (id) { return S.index[id]; })
-        .filter(Boolean);
-    }
-    return S.articles;
-  }
-
-  function rebuild() {
-    grid.innerHTML = "";
-    S.rendered = 0;
-    var list = currentList();
-    if (list.length === 0) {
-      grid.innerHTML = S.view === "saved"
-        ? '<div class="empty"><div class="big">🔖</div><h2>Votre magazine est vide</h2>' +
-          "<p>Glissez une carte ou touchez l'icône ⤺ pour y ajouter vos articles favoris.</p></div>"
-        : '<div class="empty"><div class="big">📭</div><h2>Aucun article</h2><p>Les flux sont momentanément indisponibles.</p></div>';
-      ensureSentinel(false);
-      return;
-    }
-    renderBatch();
-  }
-
-  var sentinel;
-  function ensureSentinel(show) {
-    if (!sentinel) {
-      sentinel = document.createElement("div");
-      sentinel.id = "sentinel";
-    }
-    if (show) {
-      grid.appendChild(sentinel);
-      scrollObserver.observe(sentinel);
-    } else if (sentinel.parentNode) {
-      scrollObserver.unobserve(sentinel);
-      sentinel.parentNode.removeChild(sentinel);
-    }
-  }
-
-  function renderBatch() {
-    var list = currentList();
-    var slice = list.slice(S.rendered, S.rendered + S.batch);
-    if (sentinel && sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
-    var frag = document.createDocumentFragment();
-    slice.forEach(function (a) { frag.appendChild(buildCard(a)); });
-    grid.appendChild(frag);
-    S.rendered += slice.length;
-    ensureSentinel(S.rendered < list.length);
-    layout();
-  }
-
-  var scrollObserver = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) { if (en.isIntersecting) renderBatch(); });
-  }, { root: scroll, rootMargin: "600px 0px" });
-
   // ---------- Tabs ----------
   function setView(v) {
     if (S.view === v) return;
     S.view = v;
-    document.getElementById("tabAll").classList.toggle("active", v === "all");
+    document.getElementById("tabDiscover").classList.toggle("active", v === "discover");
     document.getElementById("tabSaved").classList.toggle("active", v === "saved");
-    scroll.scrollTop = 0;
-    rebuild();
+    pager.style.display = v === "discover" ? "" : "none";
+    savedWrap.style.display = v === "saved" ? "block" : "none";
+    if (v === "saved") buildSavedGrid();
+    else { pager.focus(); }
   }
-  document.getElementById("tabAll").addEventListener("click", function () { setView("all"); });
+  document.getElementById("tabDiscover").addEventListener("click", function () { setView("discover"); });
   document.getElementById("tabSaved").addEventListener("click", function () { setView("saved"); });
 
-  // ---------- Reader ----------
+  // ---------- Keyboard ----------
+  document.addEventListener("keydown", function (e) {
+    if (document.getElementById("readerOverlay").classList.contains("open")) {
+      if (e.key === "Escape") closeReader();
+      return;
+    }
+    if (S.view !== "discover" || !S.articles.length) return;
+    if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); goToPage(S.current + 1); }
+    else if (e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); goToPage(S.current - 1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); saveArticle(S.current, true); }
+    else if (e.key === "Enter") { e.preventDefault(); var a = S.articles[S.current]; if (a) openReader(a.id); }
+  });
+  pager.addEventListener("pointerdown", function () { try { pager.focus({ preventScroll: true }); } catch (e) {} });
+
+  // ---------- READER ----------
   var overlay = document.getElementById("readerOverlay");
   var rHero = document.getElementById("readerHero");
   var rSrc = document.getElementById("readerSrc");
@@ -737,14 +634,7 @@
 
   document.getElementById("readerClose").addEventListener("click", closeReader);
   overlay.addEventListener("click", function (e) { if (e.target === overlay) closeReader(); });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && overlay.classList.contains("open")) closeReader();
-  });
-
-  function closeReader() {
-    overlay.classList.remove("open");
-    S.openId = null;
-  }
+  function closeReader() { overlay.classList.remove("open"); S.openId = null; }
 
   function request(id, want) {
     S.pending[id] = S.pending[id] || {};
@@ -752,172 +642,139 @@
     setValue({ nonce: Date.now() + "-" + Math.random().toString(36).slice(2), id: id, want: want });
   }
 
-  function openReader(id) {
-    var a = S.index[id];
-    if (!a) return;
-    S.openId = id;
+  function syncReaderSaveState(id) { if (S.openId === id) rFlip.classList.toggle("on", isSaved(id)); }
 
+  function openReader(id) {
+    var a = S.index[id]; if (!a) return;
+    S.openId = id;
     rSrc.textContent = a.emoji + " " + a.source;
     rTitle.textContent = a.title;
-    rMeta.innerHTML =
-      (a.author ? "<span>" + esc(a.author) + "</span><span>·</span>" : "") +
-      "<span>" + esc(a.date || "") + "</span>";
-
-    if (a.image) {
-      rHero.style.display = "block";
-      rHero.src = a.image;
-      rHero.onerror = function () { rHero.style.display = "none"; };
-    } else {
-      rHero.style.display = "none";
-    }
-
+    rMeta.innerHTML = (a.author ? "<span>" + esc(a.author) + "</span><span>·</span>" : "") + "<span>" + esc(a.date || "") + "</span>";
+    if (a.image) { rHero.style.display = "block"; rHero.src = a.image; rHero.onerror = function () { rHero.style.display = "none"; }; }
+    else rHero.style.display = "none";
     rFlip.classList.toggle("on", isSaved(id));
-
     document.getElementById("readerScroll").scrollTop = 0;
     overlay.classList.add("open");
-
-    renderReaderActions(a);
-    renderReaderBody(a);
-    renderReaderSummary(a);
+    renderReaderActions(a); renderReaderBody(a); renderReaderSummary(a);
   }
 
   function renderReaderActions(a) {
     rActions.innerHTML = "";
-
-    var summaryBtn = document.createElement("button");
-    summaryBtn.className = "btn gold";
-    summaryBtn.id = "btnSummary";
     var hasSummary = !!S.enrich.summary[a.id];
     var loadingSummary = S.pending[a.id] && S.pending[a.id].summary && !hasSummary;
-    summaryBtn.innerHTML = loadingSummary
-      ? '<span class="spinner"></span> Analyse en cours…'
-      : (hasSummary ? "✨ Résumé généré" : "✨ Résumé L2 (IA)");
-    summaryBtn.disabled = loadingSummary || hasSummary;
-    summaryBtn.addEventListener("click", function () {
-      request(a.id, "summary");
-      renderReaderActions(a);
-      renderReaderSummary(a);
-    });
-    rActions.appendChild(summaryBtn);
+    var sb = document.createElement("button");
+    sb.className = "btn gold";
+    sb.innerHTML = loadingSummary ? '<span class="spinner"></span> Analyse en cours…' : (hasSummary ? "✨ Résumé généré" : "✨ Résumé L2 (IA)");
+    sb.disabled = loadingSummary || hasSummary;
+    sb.addEventListener("click", function () { request(a.id, "summary"); renderReaderActions(a); renderReaderSummary(a); });
+    rActions.appendChild(sb);
 
     var link = document.createElement("a");
-    link.className = "btn";
-    link.href = a.link; link.target = "_blank"; link.rel = "noopener";
+    link.className = "btn"; link.href = a.link; link.target = "_blank"; link.rel = "noopener";
     link.innerHTML = "🧐 Article original";
     rActions.appendChild(link);
 
-    if (S.notebooklm) {
-      var nb = document.createElement("a");
-      nb.className = "btn";
-      nb.href = S.notebooklm; nb.target = "_blank"; nb.rel = "noopener";
-      nb.innerHTML = "💬 NotebookLM";
-      rActions.appendChild(nb);
-    }
+    var nb = document.createElement("button");
+    nb.className = "btn"; nb.innerHTML = "💬 NotebookLM";
+    nb.addEventListener("click", function () { sendToNotebookLM(a); });
+    rActions.appendChild(nb);
   }
 
   function renderReaderBody(a) {
     var paras = S.enrich.text[a.id];
     if (paras && paras.length) {
-      rBody.innerHTML = paras.map(function (p, i) {
-        return "<p" + (i === 0 ? ' class="lead"' : "") + ">" + esc(p) + "</p>";
-      }).join("");
+      rBody.innerHTML = paras.map(function (p, i) { return "<p" + (i === 0 ? ' class="lead"' : "") + ">" + esc(p) + "</p>"; }).join("");
       return;
     }
-    // Affiche d'abord le chapô RSS, puis charge le texte intégral
-    var teaser = a.summary_html
-      ? '<p class="lead">' + esc(stripTags(a.summary_html)) + "</p>"
-      : "";
-    rBody.innerHTML = teaser +
-      '<div class="loading-block"><span class="spinner"></span> Chargement du texte intégral…</div>';
-    if (!(S.pending[a.id] && S.pending[a.id].text)) {
-      request(a.id, "text");
-    }
+    var teaser = a.summary_html ? '<p class="lead">' + esc(stripTags(a.summary_html)) + "</p>" : "";
+    rBody.innerHTML = teaser + '<div class="loading-block"><span class="spinner"></span> Chargement du texte intégral…</div>';
+    if (!(S.pending[a.id] && S.pending[a.id].text)) request(a.id, "text");
   }
 
   function renderReaderSummary(a) {
     var summary = S.enrich.summary[a.id];
     var loading = S.pending[a.id] && S.pending[a.id].summary && !summary;
-    if (summary) {
-      rSummary.innerHTML =
-        '<div class="summary-box"><div class="s-head">✨ Résumé en 5 points · Mistral</div>' +
-        mdLight(summary) + "</div>";
-    } else if (loading) {
-      rSummary.innerHTML =
-        '<div class="summary-box"><div class="s-head">✨ Résumé · Mistral</div>' +
-        '<div class="loading-block"><span class="spinner"></span> Génération du résumé…</div></div>';
-    } else {
-      rSummary.innerHTML = "";
-    }
+    if (summary) rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé en 5 points · Mistral</div>' + mdLight(summary) + "</div>";
+    else if (loading) rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé · Mistral</div><div class="loading-block"><span class="spinner"></span> Génération du résumé…</div></div>';
+    else rSummary.innerHTML = "";
   }
 
   rFlip.addEventListener("click", function () {
     if (!S.openId) return;
-    var state = toggleSaved(S.openId);
-    rFlip.classList.toggle("on", state);
-    pulse(rFlip);
-    var card = grid.querySelector('.card[data-id="' + S.openId + '"]');
-    if (card) {
-      card.classList.toggle("flipped", state);
-      var fb = card.querySelector(".flip-btn");
-      if (fb) fb.classList.toggle("on", state);
-    }
+    var on = toggleSaved(S.openId);
+    rFlip.classList.toggle("on", on);
+    var idx = S.articles.findIndex(function (x) { return x.id === S.openId; });
+    if (idx >= 0) updatePageSaveBtn(idx);
+    toast(on ? "★ Ajouté à Mon Magazine" : "Retiré de Mon Magazine");
   });
 
-  function stripTags(html) {
-    var d = document.createElement("div");
-    d.innerHTML = html;
-    return (d.textContent || d.innerText || "").replace(/\s+/g, " ").trim();
+  function mdLight(text) { return esc(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/__(.+?)__/g, "<strong>$1</strong>"); }
+
+  // ---------- NotebookLM : copie le texte intégral + ouvre notebooklm.com ----------
+  function copyText(txt) {
+    return new Promise(function (resolve) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { resolve(true); }, function () { resolve(fallbackCopy(txt)); });
+      } else resolve(fallbackCopy(txt));
+    });
+  }
+  function fallbackCopy(txt) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position = "fixed"; ta.style.top = "-9999px"; ta.setAttribute("readonly", "");
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
+    } catch (e) { return false; }
+  }
+  function openNotebookLM() {
+    var url = S.notebooklm || "https://notebooklm.com";
+    // window.open must be called synchronously inside the click gesture, else it is blocked.
+    var w = window.open(url, "_blank");
+    if (w) { try { w.opener = null; } catch (e) {} return; }
+    var x = document.createElement("a"); x.href = url; x.target = "_blank"; x.rel = "noopener";
+    document.body.appendChild(x); x.click(); x.remove();
+  }
+  function sendToNotebookLM(a) {
+    var paras = S.enrich.text[a.id];
+    var full = (paras && paras.length) ? paras.join("\n\n") : stripTags(a.summary_html);
+    var payload = a.title + "\n\n" + a.source + " — " + (a.date || "") + "\n" + a.link + "\n\n" + full;
+    // Both clipboard write and popup are triggered synchronously to preserve user activation.
+    copyText(payload).then(function (ok) {
+      toast(ok ? "📋 Texte de l'article copié — ouverture de NotebookLM" : "Ouverture de NotebookLM");
+    });
+    openNotebookLM();
+    if (!(paras && paras.length) && !(S.pending[a.id] && S.pending[a.id].text)) request(a.id, "text");
   }
 
-  function mdLight(text) {
-    var html = esc(text);
-    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/__(.+?)__/g, "<strong>$1</strong>");
-    return html;
-  }
-
-  // ---------- Apply enrichments coming back from Python ----------
+  // ---------- Apply enrichments from Python ----------
   function applyEnrichments() {
     if (!S.openId) return;
-    var a = S.index[S.openId];
-    if (!a) return;
-    // clear pending flags that are now satisfied
+    var a = S.index[S.openId]; if (!a) return;
     if (S.pending[a.id]) {
       if (S.enrich.text[a.id]) S.pending[a.id].text = false;
       if (S.enrich.summary[a.id]) S.pending[a.id].summary = false;
     }
-    renderReaderActions(a);
-    renderReaderBody(a);
-    renderReaderSummary(a);
+    renderReaderActions(a); renderReaderBody(a); renderReaderSummary(a);
   }
 
-  // ---------- Render from Streamlit ----------
+  // ---------- Render ----------
   function onRender(args) {
     if (!args) return;
     S.enrich = args.enrichments || { text: {}, summary: {} };
-    S.notebooklm = (args.enrichments && args.enrichments.notebooklm) || "";
-
+    if (args.enrichments && args.enrichments.notebooklm) S.notebooklm = args.enrichments.notebooklm;
     if (!S.initialized) {
       S.articles = args.articles || [];
-      S.index = {};
-      S.articles.forEach(function (a) { S.index[a.id] = a; });
+      S.index = {}; S.articles.forEach(function (a) { S.index[a.id] = a; });
       S.initialized = true;
-      updateSavedCount();
-      rebuild();
-      fitHeight();
+      setHint(); updateSavedCount(); buildPager(); fitHeight();
     } else {
       applyEnrichments();
     }
   }
 
-  window.addEventListener("message", function (e) {
-    if (e.data && e.data.type === "streamlit:render") {
-      onRender(e.data.args);
-    }
-  });
-  window.addEventListener("resize", function () { fitHeight(); layout(); });
+  window.addEventListener("message", function (e) { if (e.data && e.data.type === "streamlit:render") onRender(e.data.args); });
+  window.addEventListener("resize", function () { fitHeight(); if (S.view === "discover") goToPage(S.current); else layout(); });
 
-  // announce ready
   post("streamlit:componentReady", { apiVersion: 1 });
   fitHeight();
 })();
