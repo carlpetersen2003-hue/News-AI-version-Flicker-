@@ -108,10 +108,7 @@ RSS_FEEDS = {
     "👁 Les Yeux du Monde": "https://les-yeux-du-monde.fr/feed"
 }
 
-NOTEBOOKLM_URL = (
-    "https://notebooklm.google.com/notebook/"
-    "6c5a02cc-b53e-4247-895d-501b4b938951?addSource=true"
-)
+NOTEBOOKLM_URL = "https://notebooklm.com"
 
 MOIS_FR = [
     "janvier", "février", "mars", "avril", "mai", "juin",
