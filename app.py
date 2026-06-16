@@ -276,7 +276,10 @@ def _article_depuis_entry(entry, nom, emoji, i):
         "image": _extraire_image(entry),
         "featured": i == 0 and bool(_extraire_image(entry)),
     }
-    return _enrichir_metadonnees(art)
+    art = _enrichir_metadonnees(art)
+    if i == 0 and art.get("image"):
+        art["featured"] = True
+    return art
 
 
 def _feeds_cache_key(custom_feeds):
