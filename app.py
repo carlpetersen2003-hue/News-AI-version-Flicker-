@@ -4,7 +4,7 @@ import json
 import time
 import hashlib
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -29,28 +29,6 @@ REQUEST_HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-}
-
-SCRAPE_PRESETS = {
-    "wordpress": {
-        "link_selectors": [
-            "article h2 a",
-            "article h3 a",
-            ".post-title a",
-            ".entry-title a",
-            "h2.entry-title a",
-        ],
-        "max_items": 20,
-    },
-    "generic": {
-        "link_selectors": [
-            "article a[href]",
-            "main h2 a",
-            "main h3 a",
-            ".views-row a[href]",
-        ],
-        "max_items": 15,
-    },
 }
 
 
@@ -205,60 +183,75 @@ def _excerpt(summary_html, limite=240):
     return coupe + "…"
 
 
-def _liens_scrape(source_url, preset="generic"):
-    """Extrait les liens d'articles depuis une page de publications."""
-    cfg = SCRAPE_PRESETS.get(preset, SCRAPE_PRESETS["generic"])
+def _titre_incomplet(titre):
+    t = re.sub(r"\s+", " ", (titre or "").strip())
+    if not t:
+        return True
+    return t.lower().rstrip(".") in ("sans titre", "untitled", "(no title)", "no title")
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _metadonnees_page(url):
+    """Complète titre / image depuis la page web (articles RSS incomplets)."""
     try:
-        response = requests.get(source_url, headers=REQUEST_HEADERS, timeout=15)
+        response = requests.get(url, headers=REQUEST_HEADERS, timeout=12)
         response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        titre = None
+        for sel, attr in (
+            ('meta[property="og:title"]', "content"),
+            ('meta[name="twitter:title"]', "content"),
+            ("h1", None),
+            ("title", None),
+        ):
+            el = soup.select_one(sel)
+            if not el:
+                continue
+            val = (el.get(attr) if attr else el.get_text(" ", strip=True)) or ""
+            val = re.sub(r"\s+", " ", val).strip()
+            if val and not _titre_incomplet(val):
+                titre = val
+                break
+
+        image = None
+        for sel in (
+            'meta[property="og:image"]',
+            'meta[property="og:image:url"]',
+            'meta[name="twitter:image"]',
+        ):
+            el = soup.select_one(sel)
+            if el and el.get("content"):
+                image = urljoin(url, el["content"].strip())
+                if image.startswith("http"):
+                    break
+
+        if not image:
+            for img in soup.select("article img, main img, .post-content img, .entry-content img"):
+                src = img.get("src") or img.get("data-src")
+                if src:
+                    image = urljoin(url, src.strip())
+                    if image.startswith("http"):
+                        break
+
+        return {"title": titre or "", "image": image}
     except Exception:
-        return []
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    base_netloc = urlparse(source_url).netloc
-    seen = set()
-    items = []
-
-    for sel in cfg["link_selectors"]:
-        for anchor in soup.select(sel):
-            href = anchor.get("href", "")
-            title = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
-            if not href or not title or len(title) < 15:
-                continue
-            full = urljoin(source_url, href)
-            if urlparse(full).netloc != base_netloc:
-                continue
-            if full in seen:
-                continue
-            seen.add(full)
-            items.append({"title": title, "link": full})
-            if len(items) >= cfg["max_items"]:
-                return items
-    return items
+        return {"title": "", "image": None}
 
 
-def _collecter_scrape(source_url, nom, emoji, preset="generic"):
-    """Construit une liste d'articles à partir d'une page (sans flux RSS)."""
-    articles = []
-    for i, item in enumerate(_liens_scrape(source_url, preset)):
-        lien = item["link"]
-        aid = hashlib.md5(lien.encode("utf-8")).hexdigest()[:12]
-        articles.append({
-            "id": aid,
-            "source": nom,
-            "emoji": emoji,
-            "title": item["title"],
-            "author": "",
-            "link": lien,
-            "date": "",
-            "timestamp": 0,
-            "excerpt": _excerpt(""),
-            "summary_html": "",
-            "body_html": "",
-            "image": None,
-            "featured": i == 0,
-        })
-    return articles
+def _enrichir_metadonnees(article):
+    """Scraping léger si le flux RSS n'a pas de titre ou d'image."""
+    if not article.get("link"):
+        return article
+    if not _titre_incomplet(article.get("title")) and article.get("image"):
+        return article
+
+    meta = _metadonnees_page(article["link"])
+    if _titre_incomplet(article.get("title")) and meta.get("title"):
+        article["title"] = meta["title"]
+    if not article.get("image") and meta.get("image"):
+        article["image"] = meta["image"]
+    return article
 
 
 def _article_depuis_entry(entry, nom, emoji, i):
@@ -268,7 +261,7 @@ def _article_depuis_entry(entry, nom, emoji, i):
     summary_html = entry.get("summary", "")
     body_html = _best_feed_html(entry)
     date_txt, ts = _date_lisible(entry)
-    return {
+    art = {
         "id": hashlib.md5(lien.encode("utf-8")).hexdigest()[:12],
         "source": nom,
         "emoji": emoji,
@@ -283,6 +276,7 @@ def _article_depuis_entry(entry, nom, emoji, i):
         "image": _extraire_image(entry),
         "featured": i == 0 and bool(_extraire_image(entry)),
     }
+    return _enrichir_metadonnees(art)
 
 
 def _feeds_cache_key(custom_feeds):
@@ -293,11 +287,9 @@ def _feeds_cache_key(custom_feeds):
             "url": f.get("url", ""),
             "name": f.get("name", ""),
             "emoji": f.get("emoji", ""),
-            "type": f.get("type", "rss"),
-            "preset": f.get("preset", "generic"),
         })
     return json.dumps(
-        sorted(normalized, key=lambda f: (f.get("type", ""), f.get("url", ""))),
+        sorted(normalized, key=lambda f: f.get("url", "")),
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -324,19 +316,14 @@ def collecter_articles(feeds_key=""):
             url = (f.get("url") or "").strip()
             name = (f.get("name") or "Source").strip()
             emoji = (f.get("emoji") or "📰").strip() or "📰"
-            ftype = (f.get("type") or "rss").strip()
-            preset = (f.get("preset") or "generic").strip()
             if not url:
                 continue
-            if ftype == "scrape":
-                articles_flux = _collecter_scrape(url, name, emoji, preset)
-            else:
-                flux = feedparser.parse(url)
-                articles_flux = []
-                for i, entry in enumerate(flux.entries):
-                    art = _article_depuis_entry(entry, name, emoji, i)
-                    if art:
-                        articles_flux.append(art)
+            flux = feedparser.parse(url)
+            articles_flux = []
+            for i, entry in enumerate(flux.entries):
+                art = _article_depuis_entry(entry, name, emoji, i)
+                if art:
+                    articles_flux.append(art)
             if articles_flux:
                 par_flux.append(articles_flux)
     except (json.JSONDecodeError, TypeError):
