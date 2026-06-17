@@ -398,8 +398,20 @@
   .btn.gold { background: var(--gold); border-color: var(--gold); color: #1a1a1a; }
   .article-body p { font-family: Georgia, "Times New Roman", serif; font-size: 17.5px; line-height: 1.75; color: #d4d4d8; margin: 0 0 18px; }
   .article-body .lead { font-size: 19px; color: #e8e8ea; }
-  .summary-box { margin: 0 0 28px; background: var(--accent-soft); border: 1px solid rgba(225,40,40,.3); border-radius: 14px; padding: 20px 22px; white-space: pre-wrap; line-height: 1.6; font-size: 15px; }
+  .summary-box { margin: 0 0 28px; background: var(--accent-soft); border: 1px solid rgba(225,40,40,.3); border-radius: 14px; padding: 20px 22px; line-height: 1.6; font-size: 15px; }
   .summary-box .s-head { font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .6px; font-size: 12.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .summary-box p { margin: 0 0 10px; }
+  .summary-box p:last-child { margin-bottom: 0; }
+  .summary-box .md-heading { font-weight: 800; color: #ececee; margin-top: 14px; }
+  .summary-box .md-heading:first-child { margin-top: 0; }
+  .summary-box ul { margin: 0 0 10px; padding-left: 1.25em; }
+  .summary-box li { margin-bottom: 6px; }
+  .summary-ctrl { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .summary-ctrl label { font-size: 12px; font-weight: 700; color: #d4d4d8; white-space: nowrap; }
+  .summary-ctrl select {
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+  }
   .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
   .gold .spinner, .btn .spinner { border-top-color: currentColor; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -514,6 +526,19 @@
   .feed-item .fi-rm:hover { color: #fff; border-color: var(--accent); background: var(--accent); }
   .feed-empty { color: var(--muted); font-size: 13px; line-height: 1.5; padding: 8px 0; }
   .feed-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 14px; }
+  .feed-reset-section {
+    margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);
+  }
+  .feed-reset-section h3 {
+    margin: 0 0 10px; font-size: 12px; font-weight: 800; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .feed-reset {
+    width: 100%; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    padding: 11px 16px; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 700;
+  }
+  .feed-reset:hover { background: var(--panel-2); border-color: #4a4a55; }
 
   /* ---------- MOBILE TAB BAR (style onglets navigateur) ---------- */
   @media (max-width: 720px) {
@@ -664,6 +689,11 @@
         <div id="feedList"></div>
       </div>
       <p class="feed-note">Les flux par défaut restent actifs. Si un article n’a pas de titre ou d’image dans le flux, l’app complète automatiquement depuis la page web.</p>
+      <div class="feed-reset-section">
+        <h3>Fil Découvrir</h3>
+        <button type="button" class="feed-reset" id="feedResetDismissed">Réinitialiser</button>
+        <p class="feed-note">Rétablit tous les articles supprimés du fil « Découvrir ».</p>
+      </div>
     </div>
   </div>
 </div>
@@ -729,6 +759,16 @@
     if (on && i === -1) S.dismissed.push(id);
     if (!on && i !== -1) S.dismissed.splice(i, 1);
     persistDismissed();
+  }
+  function resetDismissedArticles() {
+    if (!S.dismissed.length) { toast("Aucun article supprimé à rétablir"); return; }
+    var n = S.dismissed.length;
+    S.dismissed = [];
+    persistDismissed();
+    buildPager();
+    updateBackToTop();
+    if (S.view === "filter") buildFilterView();
+    toast(n + " article" + (n > 1 ? "s" : "") + " rétabli" + (n > 1 ? "s" : "") + " dans Découvrir");
   }
 
   function updateSavedCount() {
@@ -1076,6 +1116,10 @@
     toast("Flux ajouté — actualisation du fil…");
   });
   renderEmojiRow();
+
+  document.getElementById("feedResetDismissed").addEventListener("click", function () {
+    resetDismissedArticles();
+  });
 
   document.getElementById("backToTop").addEventListener("click", function () {
     if (S.view !== "discover") setView("discover");
@@ -1575,10 +1619,20 @@
     S.openId = null;
   }
 
-  function request(id, want) {
+  function request(id, want, opts) {
     S.pending[id] = S.pending[id] || {};
     S.pending[id][want] = true;
-    setValue({ nonce: Date.now() + "-" + Math.random().toString(36).slice(2), id: id, want: want });
+    var payload = { nonce: Date.now() + "-" + Math.random().toString(36).slice(2), id: id, want: want };
+    if (opts && opts.summaryPoints != null) payload.summary_points = opts.summaryPoints;
+    setValue(payload);
+  }
+  function summaryText(entry) {
+    if (!entry) return "";
+    return typeof entry === "string" ? entry : (entry.text || "");
+  }
+  function summaryPoints(entry) {
+    if (!entry || typeof entry === "string") return 5;
+    return entry.points || 5;
   }
 
   function syncReaderSaveState(id) { if (S.openId === id) rFlip.classList.toggle("on", isSaved(id)); }
@@ -1622,14 +1676,37 @@
 
   function renderReaderActions(a) {
     rActions.innerHTML = "";
-    var hasSummary = !!S.enrich.summary[a.id];
+    var summaryEntry = S.enrich.summary[a.id];
+    var hasSummary = !!summaryText(summaryEntry);
     var loadingSummary = S.pending[a.id] && S.pending[a.id].summary && !hasSummary;
+
+    var ctrl = document.createElement("div");
+    ctrl.className = "summary-ctrl";
+    var lbl = document.createElement("label");
+    lbl.setAttribute("for", "summaryPointsSelect");
+    lbl.textContent = "Points :";
+    var sel = document.createElement("select");
+    sel.id = "summaryPointsSelect";
+    for (var n = 1; n <= 5; n++) {
+      var opt = document.createElement("option");
+      opt.value = String(n);
+      opt.textContent = String(n);
+      if (n === 5) opt.selected = true;
+      sel.appendChild(opt);
+    }
     var sb = document.createElement("button");
     sb.className = "btn gold";
     sb.innerHTML = loadingSummary ? '<span class="spinner"></span> Analyse en cours…' : (hasSummary ? "✨ Résumé généré" : "✨ Résumé L2 (IA)");
     sb.disabled = loadingSummary || hasSummary;
-    sb.addEventListener("click", function () { request(a.id, "summary"); renderReaderActions(a); renderReaderSummary(a); });
-    rActions.appendChild(sb);
+    sb.addEventListener("click", function () {
+      request(a.id, "summary", { summaryPoints: parseInt(sel.value, 10) || 5 });
+      renderReaderActions(a);
+      renderReaderSummary(a);
+    });
+    ctrl.appendChild(lbl);
+    ctrl.appendChild(sel);
+    ctrl.appendChild(sb);
+    rActions.appendChild(ctrl);
 
     var link = document.createElement("a");
     link.className = "btn"; link.href = a.link; link.target = "_blank"; link.rel = "noopener";
@@ -1654,11 +1731,16 @@
   }
 
   function renderReaderSummary(a) {
-    var summary = S.enrich.summary[a.id];
+    var summaryEntry = S.enrich.summary[a.id];
+    var summary = summaryText(summaryEntry);
     var loading = S.pending[a.id] && S.pending[a.id].summary && !summary;
-    if (summary) rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé en 5 points · Mistral</div>' + mdLight(summary) + "</div>";
-    else if (loading) rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé · Mistral</div><div class="loading-block"><span class="spinner"></span> Génération du résumé…</div></div>';
-    else rSummary.innerHTML = "";
+    var pts = summaryPoints(summaryEntry);
+    var headPts = pts === 1 ? "1 point" : pts + " points";
+    if (summary) {
+      rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé en ' + headPts + ' · Mistral</div>' + mdLight(summary) + "</div>";
+    } else if (loading) {
+      rSummary.innerHTML = '<div class="summary-box"><div class="s-head">✨ Résumé · Mistral</div><div class="loading-block"><span class="spinner"></span> Génération du résumé…</div></div>';
+    } else rSummary.innerHTML = "";
   }
 
   rFlip.addEventListener("click", function () {
@@ -1670,7 +1752,41 @@
     toast(on ? "★ Ajouté à Mon Magazine" : "Retiré de Mon Magazine");
   });
 
-  function mdLight(text) { return esc(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/__(.+?)__/g, "<strong>$1</strong>"); }
+  function inlineMd(s) {
+    s = esc(s);
+    s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/__(.+?)__/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^*])\*(?!\*)(.+?)\*(?!\*)/g, "$1<strong>$2</strong>");
+    s = s.replace(/_(.+?)_/g, "<em>$1</em>");
+    return s;
+  }
+  function mdLight(text) {
+    var lines = String(text || "").split("\n");
+    var out = [];
+    var inList = false;
+    lines.forEach(function (line) {
+      var raw = line.trim();
+      if (!raw) {
+        if (inList) { out.push("</ul>"); inList = false; }
+        return;
+      }
+      var hm = raw.match(/^#{1,6}\s+(.+)$/);
+      if (hm) {
+        if (inList) { out.push("</ul>"); inList = false; }
+        out.push('<p class="md-heading">' + inlineMd(hm[1]) + "</p>");
+        return;
+      }
+      if (/^[-*•]\s+/.test(raw)) {
+        if (!inList) { out.push("<ul>"); inList = true; }
+        out.push("<li>" + inlineMd(raw.replace(/^[-*•]\s+/, "")) + "</li>");
+        return;
+      }
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push("<p>" + inlineMd(raw) + "</p>");
+    });
+    if (inList) out.push("</ul>");
+    return out.join("");
+  }
 
   // ---------- NotebookLM : copie le texte intégral + ouvre notebooklm.com ----------
   function copyText(txt) {
@@ -1714,7 +1830,7 @@
     var a = S.index[S.openId]; if (!a) return;
     if (S.pending[a.id]) {
       if (S.enrich.text[a.id]) S.pending[a.id].text = false;
-      if (S.enrich.summary[a.id]) S.pending[a.id].summary = false;
+      if (summaryText(S.enrich.summary[a.id])) S.pending[a.id].summary = false;
     }
     renderReaderActions(a); renderReaderBody(a); renderReaderSummary(a);
   }

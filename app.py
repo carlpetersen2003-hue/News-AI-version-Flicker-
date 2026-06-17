@@ -55,9 +55,11 @@ def nettoyer_html(raw_html):
 # FONCTION : GENERATION RESUME
 # ==============================
 
-def generer_resume(texte):
+def generer_resume(texte, n_points=5):
     try:
+        n_points = max(1, min(5, int(n_points)))
         texte_utilise = texte[:MAX_CHARS]
+        point_label = "point majeur" if n_points == 1 else "points majeurs"
 
         response = client.chat.complete(
             model="mistral-small-latest",
@@ -65,12 +67,12 @@ def generer_resume(texte):
                 {
                     "role": "user",
                     "content": f"""
-Fais un résumé de l'article suivant en 5 points majeurs.
+Fais un résumé de l'article suivant en {n_points} {point_label}.
 
 Le résumé commencera par une problématique générale formulée sous forme de question paradoxale.
 
 Ensuite :
-- 5 points différenciés par des emojis adaptés
+- {n_points} points différenciés par des emojis adaptés
 - Chaque point contient, au format bullet point :
     • un titre court
     • une explication synthétique
@@ -476,11 +478,11 @@ def obtenir_paragraphes(article):
 
 
 @st.cache_data(show_spinner=False)
-def resume_pour_url(url, fallback_html):
+def resume_pour_url(url, fallback_html, n_points=5):
     texte = extraire_texte_article(url)
     if len(texte) < 800:
         texte = nettoyer_html(fallback_html)
-    return generer_resume(texte)
+    return generer_resume(texte, n_points)
 
 
 # ==============================
@@ -568,8 +570,16 @@ if isinstance(valeur, dict) and valeur.get("nonce") != st.session_state.last_non
                 st.session_state.enrich_text[aid] = obtenir_paragraphes(art)
 
             if want in ("summary", "both") and aid not in st.session_state.enrich_summary:
-                st.session_state.enrich_summary[aid] = resume_pour_url(
-                    art["link"], art["summary_html"]
-                )
+                n_points = valeur.get("summary_points", 5)
+                try:
+                    n_points = max(1, min(5, int(n_points)))
+                except (TypeError, ValueError):
+                    n_points = 5
+                st.session_state.enrich_summary[aid] = {
+                    "text": resume_pour_url(
+                        art["link"], art["summary_html"], n_points
+                    ),
+                    "points": n_points,
+                }
 
         st.rerun()
