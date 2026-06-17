@@ -1273,6 +1273,9 @@
       var backScroll = textwrap.querySelector(".flip-card-back-scroll");
       if (backScroll) {
         backScroll.addEventListener("wheel", function (e) { e.stopPropagation(); }, { passive: true });
+        backScroll.addEventListener("touchmove", function (e) {
+          if (backScroll.scrollHeight > backScroll.clientHeight + 2) e.stopPropagation();
+        }, { passive: true });
       }
       textwrap.addEventListener("click", function (e) {
         if (e.target.closest(".flip-card-back-scroll")) return;
