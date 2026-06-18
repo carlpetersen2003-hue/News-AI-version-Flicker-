@@ -1,3 +1,4 @@
+import html as html_module
 import os
 import re
 import json
@@ -47,8 +48,12 @@ def extraire_texte_article(url):
 # ==============================
 
 def nettoyer_html(raw_html):
-    cleanr = re.compile('<.*?>')
-    return re.sub(cleanr, '', raw_html)
+    """Texte lisible sans balises ni entités HTML (&#8217; → ', etc.)."""
+    if not raw_html:
+        return ""
+    soup = BeautifulSoup(raw_html, "html.parser")
+    texte = html_module.unescape(soup.get_text(" ", strip=True))
+    return re.sub(r"\s+", " ", texte).strip()
 
 
 # ==============================
@@ -120,6 +125,7 @@ FEED_PACKAGES = {
             {"name": "La Vie des idées", "emoji": "🧠", "url": "https://laviedesidees.fr/spip.php?page=backend"},
             {"name": "Philomédia", "emoji": "💭", "url": "https://www.philomedia.be/feed/"},
             {"name": "Acta Fabula", "emoji": "📜", "url": "https://www.fabula.org/lodel/acta/backend.php?format=rss092documents"},
+            {"name": "Actu-Philosophia", "emoji": "🤔", "url": "https://www.actu-philosophia.com/feed/"},
         ],
     },
     "economie": {
@@ -129,7 +135,7 @@ FEED_PACKAGES = {
             {"name": "Institut Choiseul", "emoji": "💼", "url": "https://www.choiseul.info/feed"},
             {"name": "CEPII / OFCE", "emoji": "📊", "url": "https://www.cepii.fr/CEPII/rss/RSSLettre.asp"},
             {"name": "Observatoire des inégalités", "emoji": "⚖️", "url": "https://www.inegalites.fr/spip.php?page=backend"},
-            {"name": "Le cercle des économistes", "emoji": "📈", "url": "https://lecercledeseconomistes.fr/feed/"},
+            {"name": "Alternatives Économiques", "emoji": "📰", "url": "https://blogs.alternatives-economiques.fr/rss.xml"},
         ],
     },
     "environnement_societe": {
@@ -138,14 +144,14 @@ FEED_PACKAGES = {
         "feeds": [
             {"name": "Terra Nova", "emoji": "🌍", "url": "https://tnova.fr/feed"},
             {"name": "Institut Jean Jaurès", "emoji": "✊", "url": "https://www.jean-jaures.org/publication/feed/"},
-            {"name": "IDDRI", "emoji": "🌿", "url": "https://www.iddri.org/rss.xml"},
-            {"name": "Fondapol", "emoji": "🏢", "url": "https://www.fondapol.org/feed"},
+            {"name": "Baptiste Coulmont", "emoji": "📊", "url": "https://coulmont.com/feed/"},
+            {"name": "OpenEdition Lectures", "emoji": "📚", "url": "https://journals.openedition.org/lectures/backend?format=rssdocuments&idcontainer=171"},
         ],
     },
 }
 
 DEFAULT_ACTIVE_PACKAGES = ["geopolitique"]
-MAX_ACTIVE_PACKAGES = 2
+MAX_ACTIVE_PACKAGES = 1
 
 NOTEBOOKLM_URL = "https://notebooklm.google.com"
 
@@ -512,16 +518,38 @@ def _paragraphes_depuis_root(root):
     return paras
 
 
+def _page_est_bloquee(html_text):
+    """Détecte les pages anti-bot (Anubis, Cloudflare…) sans contenu article."""
+    blob = html_text or ""
+    low = blob.lower()
+    if len(blob) < 8000 and any(
+        marker in low
+        for marker in (
+            "anubis",
+            "challenge__logo",
+            "filtrer les robots",
+            "checking your browser",
+            "cf-browser-verification",
+            "just a moment",
+        )
+    ):
+        return True
+    return False
+
+
 def _extraire_paragraphes_web(url):
     """Extraction full-text depuis la page web de l'article."""
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=15)
         response.raise_for_status()
+        if _page_est_bloquee(response.text):
+            return []
         soup = BeautifulSoup(response.text, "html.parser")
         for tag in soup(["script", "style", "noscript", "iframe"]):
             tag.decompose()
 
         selectors = [
+            "#text-content",          # OpenEdition (Lodel)
             ".entry-content.texte",   # SPIP (La Vie des Idées, Diploweb…)
             ".texte",
             "article .field--name-body",
