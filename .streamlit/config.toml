@@ -1,0 +1,6 @@
+[server]
+# Sert correctement les assets des composants custom en production
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
