@@ -591,8 +591,10 @@ def resume_pour_url(url, fallback_html, n_points=5):
 # ==============================
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
+# Nom versionné pour invalider le cache navigateur après déploiement
+# (Streamlit sert le composant sous app.<name>/index.html).
 _flipboard = components.declare_component(
-    "flipboard_magazine",
+    "flipboard_magazine_v2",
     path=os.path.join(_DIR, "flipboard_component"),
 )
 
@@ -602,7 +604,7 @@ def flipboard(articles, enrichments):
         articles=articles,
         enrichments=enrichments,
         default=None,
-        key="flipboard_magazine",
+        key="flipboard_magazine_v2",
     )
 
 
